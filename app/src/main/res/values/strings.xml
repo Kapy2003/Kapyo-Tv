@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Kapyo Tv</string>
+    <string name="category_all">All Channels</string>
+    <string name="category_favorites">Favorites</string>
+    <string name="category_recent">Recent</string>
+    <string name="search_hint">Search channels…</string>
+    <string name="settings">Settings</string>
+    <string name="refresh_channels">Refresh Playlist</string>
+    <string name="clear_cache">Clear Cache</string>
+    <string name="change_country">Select Country</string>
+    <string name="max_resolution">Max Resolution</string>
+    <string name="about_title">About &amp; Disclaimer</string>
+    <string name="report_broken">Report Broken Channel</string>
+    <string name="stream_unavailable">Stream Unavailable</string>
+    <string name="auto_retry_notice">Attempting to reconnect…</string>
+    <string name="next_channel_prompt">Press OK to jump to next channel</string>
+    <string name="disclaimer_text">Kapyo Tv only indexes publicly available broadcast streams and does not host, re-stream, transcode, or modify media. Source: iptv-org/iptv. All streams remain property of their respective broadcasters.</string>
+    <string name="loading_channels">Loading channels…</string>
+    <string name="no_channels_found">No channels found</string>
+    <string name="empty_favorites">No favorite channels for this country yet. Long-press OK on any channel to favorite.</string>
+</resources>

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Trade-off Explanation:
+    Over 70+ public IPTV live streams in India (and many internationally) originate from legacy broadcast
+    head-ends and regional streaming servers that only serve HTTP port 80/8080 (no TLS support).
+    To allow smooth playback of these legitimate broadcast streams on 512MB TV devices without breaking
+    playback, cleartext traffic is permitted for media streaming.
+    Metadata fetching (iptv-org playlists, icons) uses HTTPS exclusively.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>
+

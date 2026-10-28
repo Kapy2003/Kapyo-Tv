@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Deep space background -->
+    <item>
+        <color android:color="#050811" />
+    </item>
+    <!-- Centered Kapyo Tv Banner -->
+    <item
+        android:width="260dp"
+        android:height="146dp"
+        android:gravity="center">
+        <bitmap
+            android:gravity="center"
+            android:src="@drawable/banner" />
+    </item>
+</layer-list>

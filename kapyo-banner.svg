@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 180" width="320" height="180">
+  <defs>
+    <!-- Background Gradient -->
+    <linearGradient id="bannerBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#050811"/>
+      <stop offset="50%" stop-color="#0B1120"/>
+      <stop offset="100%" stop-color="#141E33"/>
+    </linearGradient>
+
+    <!-- Cyan to Royal Blue Neon -->
+    <linearGradient id="cyanNeon" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00F2FE"/>
+      <stop offset="100%" stop-color="#3B82F6"/>
+    </linearGradient>
+
+    <!-- Warm Amber Glow -->
+    <linearGradient id="amberPill" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FBBF24"/>
+      <stop offset="100%" stop-color="#F59E0B"/>
+    </linearGradient>
+
+    <!-- Soft radial glow behind icon -->
+    <radialGradient id="ambientGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#38BDF8" stop-opacity="0.25"/>
+      <stop offset="100%" stop-color="#38BDF8" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Banner Canvas -->
+  <rect width="320" height="180" fill="url(#bannerBg)"/>
+
+  <!-- Ambient Glow on Left -->
+  <circle cx="56" cy="90" r="70" fill="url(#ambientGlow)"/>
+
+  <!-- TV Safe Border -->
+  <rect x="2" y="2" width="316" height="176" rx="10" fill="none" stroke="#1E293B" stroke-width="1.5"/>
+
+  <!-- Icon Group on Left: Center (54, 88) -->
+  <g transform="translate(54, 88)">
+    <!-- TV Bezel -->
+    <rect x="-34" y="-28" width="68" height="50" rx="10" fill="#0A0E1A" stroke="url(#cyanNeon)" stroke-width="2.5"/>
+    
+    <!-- K Monogram -->
+    <rect x="-22" y="-18" width="6" height="30" rx="2" fill="#FFFFFF"/>
+    <!-- Upper arm -->
+    <path d="M-15 -3 L-2 -18 L5 -18 L-9 0 Z" fill="url(#cyanNeon)"/>
+    <!-- Lower arm -->
+    <path d="M-11 -3 L5 12 L-2 12 L-15 1 Z" fill="#FFFFFF"/>
+    <!-- Play arrow -->
+    <polygon points="12,-7 12,7 23,0" fill="url(#amberPill)"/>
+
+    <!-- Stand -->
+    <path d="M-6 22 L-8 27 L8 27 L6 22 Z" fill="#1E293B"/>
+    <rect x="-16" y="27" width="32" height="3" rx="1.5" fill="url(#amberPill)"/>
+  </g>
+
+  <!-- Typography Group on Right -->
+  <!-- Brand Name: KAPYO TV -->
+  <text x="108" y="80" font-family="system-ui, -apple-system, sans-serif" font-size="28" font-weight="900" fill="#FFFFFF" letter-spacing="2">KAPYO</text>
+  
+  <!-- TV Badge Pill -->
+  <g transform="translate(226, 60)">
+    <rect width="38" height="22" rx="6" fill="url(#amberPill)"/>
+    <text x="19" y="15" font-family="system-ui, -apple-system, sans-serif" font-size="12" font-weight="900" fill="#050811" text-anchor="middle" letter-spacing="1">TV</text>
+  </g>
+
+  <!-- Tagline: STREAM THE WORLD LIVE -->
+  <text x="110" y="104" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="700" fill="#38BDF8" letter-spacing="1.2">STREAM THE WORLD LIVE</text>
+  
+  <!-- Subtle Specs Pill: 512MB RAM OPTIMIZED • FAST LIVE HLS -->
+  <g transform="translate(110, 116)">
+    <rect width="186" height="18" rx="4" fill="#0F172A" stroke="#1E293B" stroke-width="1"/>
+    <text x="93" y="13" font-family="system-ui, -apple-system, sans-serif" font-size="9" font-weight="600" fill="#94A3B8" text-anchor="middle" letter-spacing="0.5">512MB RAM OPTIMIZED • LIVE HLS</text>
+  </g>
+</svg>

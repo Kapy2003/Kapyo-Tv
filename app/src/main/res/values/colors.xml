@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="tv_bg_dark">#06090F</color>
+    <color name="tv_surface">#111827</color>
+    <color name="tv_surface_focused">#1D4ED8</color>
+    <color name="tv_card_bg">#0F172A</color>
+    <color name="tv_card_border">#1E293B</color>
+    <color name="tv_card_focused">#2563EB</color>
+    <color name="tv_focus_border">#38BDF8</color>
+    <color name="tv_accent">#0284C7</color>
+    <color name="tv_accent_bright">#38BDF8</color>
+    <color name="tv_text_primary">#FFFFFF</color>
+    <color name="tv_text_secondary">#CBD5E1</color>
+    <color name="tv_text_muted">#94A3B8</color>
+    <color name="tv_error">#F87171</color>
+    <color name="tv_overlay_bg">#E606090F</color>
+    <color name="tv_badge_bg">#1E293B</color>
+    <color name="tv_badge_text">#38BDF8</color>
+    <color name="tv_star_gold">#FBBF24</color>
+</resources>

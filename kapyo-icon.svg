@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <!-- Background Gradient -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#080C17"/>
+      <stop offset="50%" stop-color="#0F172A"/>
+      <stop offset="100%" stop-color="#182234"/>
+    </linearGradient>
+    
+    <!-- Neon Beam Gradient -->
+    <linearGradient id="neonBeam" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00F2FE"/>
+      <stop offset="50%" stop-color="#4FACFE"/>
+      <stop offset="100%" stop-color="#6366F1"/>
+    </linearGradient>
+
+    <!-- Warm Amber Glow -->
+    <linearGradient id="amberGlow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FCD34D"/>
+      <stop offset="100%" stop-color="#F59E0B"/>
+    </linearGradient>
+
+    <!-- TV Screen Depth Gradient -->
+    <linearGradient id="screenGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#0A0E1A"/>
+      <stop offset="100%" stop-color="#040711"/>
+    </linearGradient>
+
+    <!-- Ambient Glow Filter -->
+    <filter id="softGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="16" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+
+  <!-- Squircle Base with Smooth Corner Curve -->
+  <rect width="512" height="512" rx="120" fill="url(#bgGrad)"/>
+  
+  <!-- Outer Neon Halo Ring -->
+  <rect x="16" y="16" width="480" height="480" rx="108" fill="none" stroke="url(#neonBeam)" stroke-width="3" opacity="0.4"/>
+
+  <!-- TV Display Screen Body -->
+  <rect x="76" y="96" width="360" height="268" rx="36" fill="url(#screenGrad)" stroke="#1E293B" stroke-width="4"/>
+  <rect x="80" y="100" width="352" height="260" rx="32" fill="none" stroke="url(#neonBeam)" stroke-width="4" opacity="0.9"/>
+
+  <!-- Geometric K Monogram with Integrated Play Prism -->
+  <!-- Vertical Pillar of K -->
+  <rect x="148" y="148" width="32" height="164" rx="10" fill="#FFFFFF"/>
+  
+  <!-- Upper Diagonal Branch of K (Cyan Neon) -->
+  <path d="M192 236 L278 152 Q286 144 296 148 L308 154 Q316 160 312 170 L236 244 Z" fill="url(#neonBeam)"/>
+  
+  <!-- Lower Diagonal Branch of K with Broadcast Play Triangle -->
+  <path d="M214 224 L310 304 Q318 312 308 318 L294 322 Q284 322 276 314 L188 240 Z" fill="#FFFFFF"/>
+
+  <!-- Vibrant Amber Play Broadcast Beacon -->
+  <polygon points="314,212 314,252 348,232" fill="url(#amberGlow)" filter="url(#softGlow)"/>
+
+  <!-- Sleek TV Stand Base -->
+  <path d="M228 368 L220 404 Q218 410 224 412 L288 412 Q294 410 292 404 L284 368 Z" fill="#1E293B"/>
+  <rect x="168" y="410" width="176" height="16" rx="8" fill="url(#amberGlow)"/>
+
+  <!-- Live Broadcast Indicator Dot -->
+  <circle cx="396" cy="126" r="6" fill="#10B981"/>
+</svg>

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Main TV Theme -->
+    <style name="Theme.Kapyo" parent="Theme.AppCompat.NoActionBar">
+        <item name="android:windowBackground">@color/tv_bg_dark</item>
+        <item name="android:colorBackground">@color/tv_bg_dark</item>
+        <item name="android:textColorPrimary">@color/tv_text_primary</item>
+        <item name="android:textColorSecondary">@color/tv_text_secondary</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowFullscreen">true</item>
+        <item name="android:windowContentOverlay">@null</item>
+    </style>
+
+    <!-- Instant 0-overhead Splash Theme for 512MB RAM devices -->
+    <style name="Theme.Kapyo.Splash" parent="Theme.AppCompat.NoActionBar">
+        <item name="android:windowBackground">@drawable/splash_background</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowFullscreen">true</item>
+        <item name="android:windowContentOverlay">@null</item>
+    </style>
+
+    <!-- Backward compatibility aliases -->
+    <style name="Theme.Orbio" parent="Theme.Kapyo" />
+    <style name="Theme.Orbio.Splash" parent="Theme.Kapyo.Splash" />
+</resources>
