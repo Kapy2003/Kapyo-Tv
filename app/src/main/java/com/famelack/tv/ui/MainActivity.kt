@@ -392,7 +392,19 @@ class MainActivity : AppCompatActivity(), PlayerEventListener {
             }
         }
 
-        filteredChannels = list
+        // Step 4: Deterministic, predictable sorting
+        filteredChannels = if (currentCategoryId == Category.ID_RECENT) {
+            list // Keep chronological recency order
+        } else if (currentSearchQuery.isNotEmpty()) {
+            val q = currentSearchQuery.lowercase()
+            list.sortedWith(compareBy(
+                { !it.name.lowercase().startsWith(q) }, // Prefix matches first
+                { it.name.lowercase() }                 // Then alphabetically A-Z
+            ))
+        } else {
+            list.sortedBy { it.name.lowercase() }       // Alphabetical A-Z across grid
+        }
+
         channelAdapter.submitList(filteredChannels) {
             if (filteredChannels.isEmpty()) {
                 tvEmptyState.visibility = View.VISIBLE

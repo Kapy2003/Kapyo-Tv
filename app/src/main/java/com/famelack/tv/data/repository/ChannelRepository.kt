@@ -40,7 +40,9 @@ class ChannelRepository(
     val channelState: StateFlow<ChannelState> = _channelState.asStateFlow()
 
     private val stringPool = HashMap<String, String>()
-    private val m3uParser = M3UParser(stringPool)
+    private val m3uParser = M3UParser(stringPool) { tvgId, name ->
+        ChannelMetadataRegistry.getLanguage(context, tvgId, name)
+    }
 
     // Only ONE country's channels in memory at any time (strict 512 MB constraint)
     private var activeChannels: List<Channel> = emptyList()
@@ -70,7 +72,7 @@ class ChannelRepository(
             val oldCache = getCacheFile(evictedCountry)
             if (oldCache.exists()) {
                 oldCache.delete()
-                Log.i(TAG, "LRU Evicted disk cache for country: $evictedCountry")
+                Log.i(TAG, "LRU Evicted country cache on disk: $evictedCountry")
             }
         }
         enforceDiskCacheLimits()
@@ -78,14 +80,13 @@ class ChannelRepository(
         val cacheFile = getCacheFile(cleanCountry)
         val hasCache = cacheFile.exists() && cacheFile.length() > 0
 
-        if (hasCache) {
-            val cachedList = readFromCacheFile(cacheFile)
-            if (cachedList.isNotEmpty()) {
-                activeChannels = cachedList
-                _channelState.value = ChannelState.Success(cachedList, isFromCache = true)
+        if (hasCache && !forceRefresh) {
+            val cachedChannels = readFromCacheFile(cacheFile)
+            if (cachedChannels.isNotEmpty()) {
+                activeChannels = cachedChannels
+                _channelState.value = ChannelState.Success(cachedChannels, isFromCache = true)
+                Log.i(TAG, "Loaded ${cachedChannels.size} channels from cache for $cleanCountry")
             }
-        } else {
-            _channelState.value = ChannelState.Loading
         }
 
         val lastFetch = prefs.getLastFetchTime(cleanCountry)
@@ -185,7 +186,27 @@ class ChannelRepository(
                             stringPool.getOrPut(str) { str }
                         }
                         if (ch != null) {
-                            list.add(ch)
+                            // Backfill language and category if cache has null or obsolete values
+                            val rawLang = if (ch.language.isNullOrEmpty() || ch.language == "General") {
+                                ChannelMetadataRegistry.getLanguage(context, ch.id, ch.name)
+                            } else {
+                                ch.language
+                            }
+                            val validLang = stringPool.getOrPut(rawLang) { rawLang }
+
+                            val rawCat = if (ch.category.equals("Undefined", ignoreCase = true)) {
+                                "General"
+                            } else {
+                                ch.category
+                            }
+                            val validCat = stringPool.getOrPut(rawCat) { rawCat }
+
+                            val finalCh = if (validLang != ch.language || validCat != ch.category) {
+                                ch.copy(language = validLang, category = validCat)
+                            } else {
+                                ch
+                            }
+                            list.add(finalCh)
                         }
                     }
                     line = reader.readLine()
@@ -264,13 +285,13 @@ class ChannelRepository(
 
     /**
      * Compute language list for the current country.
+     * All languages sorted alphabetically A to Z. Total count equals channels.size.
      */
     fun computeLanguages(channels: List<Channel>): List<Category> {
         val langCounts = LinkedHashMap<String, Int>()
         for (ch in channels) {
-            if (!ch.language.isNullOrEmpty()) {
-                langCounts[ch.language] = (langCounts[ch.language] ?: 0) + 1
-            }
+            val lang = ch.language?.ifEmpty { "General" } ?: "General"
+            langCounts[lang] = (langCounts[lang] ?: 0) + 1
         }
 
         val languages = ArrayList<Category>()
@@ -366,9 +387,7 @@ class ChannelRepository(
                         }
                     }
                 }
-            } catch (_: Exception) {
-                // Offline or unreachable
-            }
+            } catch (ignored: Exception) {}
         }
         null
     }
