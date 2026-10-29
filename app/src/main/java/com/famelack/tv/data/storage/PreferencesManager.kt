@@ -9,6 +9,7 @@ import com.famelack.tv.data.model.Country
  * - Persists selected country (defaulted to device locale or SIM region).
  * - Persists per-country favorites.
  * - Tracks LRU accessed countries for aggressive 5-country disk cache eviction.
+ * - Tracks dismissed OTA update version.
  */
 class PreferencesManager(private val context: Context) {
 
@@ -40,6 +41,10 @@ class PreferencesManager(private val context: Context) {
     var maxResolution: String
         get() = prefs.getString(KEY_MAX_RES, "720p") ?: "720p"
         set(value) = prefs.edit().putString(KEY_MAX_RES, value).apply()
+
+    var lastDismissedUpdateVersion: String?
+        get() = prefs.getString(KEY_LAST_DISMISSED_UPDATE_VER, null)
+        set(value) = prefs.edit().putString(KEY_LAST_DISMISSED_UPDATE_VER, value).apply()
 
     // ==================== Per-Country Favorites ====================
 
@@ -174,5 +179,6 @@ class PreferencesManager(private val context: Context) {
         private const val KEY_FETCH_TIME_PREFIX = "fetch_time"
         private const val KEY_LRU_COUNTRIES = "lru_countries"
         private const val KEY_IS_COUNTRY_USER_SELECTED = "is_country_user_selected"
+        private const val KEY_LAST_DISMISSED_UPDATE_VER = "last_dismissed_update_version"
     }
 }

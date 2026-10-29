@@ -3,7 +3,9 @@ package com.famelack.tv.ui.settings
 import android.app.Dialog
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.view.Window
 import android.widget.Button
@@ -19,7 +21,8 @@ class SettingsDialog(
     private val prefs: PreferencesManager,
     private val onCountryChanged: (Country) -> Unit,
     private val onRefreshRequested: () -> Unit,
-    private val onCacheCleared: () -> Unit
+    private val onCacheCleared: () -> Unit,
+    private val onCheckUpdateRequested: () -> Unit
 ) : Dialog(context) {
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -49,6 +52,11 @@ class SettingsDialog(
             onCacheCleared()
             Toast.makeText(context, "Cache cleared successfully", Toast.LENGTH_SHORT).show()
             dismiss()
+        }
+
+        findViewById<Button>(R.id.btn_check_update).setOnClickListener {
+            dismiss()
+            onCheckUpdateRequested()
         }
 
         findViewById<Button>(R.id.btn_about).setOnClickListener {
@@ -103,10 +111,24 @@ class SettingsDialog(
     }
 
     private fun showAboutDialog() {
+        val verName = try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                context.packageManager.getPackageInfo(
+                    context.packageName,
+                    PackageManager.PackageInfoFlags.of(0)
+                ).versionName ?: "1.1.0"
+            } else {
+                @Suppress("DEPRECATION")
+                context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "1.1.0"
+            }
+        } catch (e: Exception) {
+            "1.1.0"
+        }
+
         AlertDialog.Builder(context, androidx.appcompat.R.style.Theme_AppCompat_Dialog_Alert)
             .setTitle(R.string.about_title)
             .setMessage(
-                "Kapyo Tv v1.0.0\n\n" +
+                "Kapyo Tv v$verName\n\n" +
                 "Engineered for ultra-resource-constrained Android TV devices (512 MB RAM, Android Go Edition).\n\n" +
                 "Data Source: iptv-org/iptv (Public Domain)\n\n" +
                 "Disclaimer:\n" +

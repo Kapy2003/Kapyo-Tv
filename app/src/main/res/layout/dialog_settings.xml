@@ -116,6 +116,17 @@
         android:textSize="13sp" />
 
     <Button
+        android:id="@+id/btn_check_update"
+        android:layout_width="match_parent"
+        android:layout_height="40dp"
+        android:layout_marginTop="8dp"
+        android:background="@drawable/bg_chip_category"
+        android:focusable="true"
+        android:text="Check for Updates (OTA)"
+        android:textColor="@color/tv_text_primary"
+        android:textSize="13sp" />
+
+    <Button
         android:id="@+id/btn_about"
         android:layout_width="match_parent"
         android:layout_height="40dp"
@@ -149,4 +160,3 @@
         android:textSize="13sp" />
 
 </LinearLayout>
-

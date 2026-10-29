@@ -13,6 +13,7 @@ import android.text.TextWatcher
 import android.view.KeyEvent
 import android.view.SurfaceView
 import android.view.View
+import android.view.WindowManager
 import android.view.inputmethod.InputMethodManager
 import android.widget.Button
 import android.widget.EditText
@@ -43,6 +44,9 @@ import com.famelack.tv.ui.player.PlayerEventListener
 import com.famelack.tv.ui.player.TvPlayerManager
 import com.famelack.tv.ui.settings.SettingsDialog
 import com.famelack.tv.util.MemoryMonitor
+import com.famelack.tv.util.OtaManager
+import com.famelack.tv.util.UpdateInfo
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity(), PlayerEventListener {
@@ -50,6 +54,7 @@ class MainActivity : AppCompatActivity(), PlayerEventListener {
     private lateinit var prefs: PreferencesManager
     private lateinit var repository: ChannelRepository
     private lateinit var playerManager: TvPlayerManager
+    private lateinit var otaManager: OtaManager
 
     // Containers
     private lateinit var containerBrowse: View
@@ -121,6 +126,7 @@ class MainActivity : AppCompatActivity(), PlayerEventListener {
         prefs = app.preferencesManager
         repository = app.channelRepository
         playerManager = TvPlayerManager(this, this)
+        otaManager = OtaManager(this)
 
         initViews()
         setupAdapters()
@@ -142,6 +148,15 @@ class MainActivity : AppCompatActivity(), PlayerEventListener {
                     updateCountryBadge()
                     repository.loadChannels(geoCountry.code, forceRefresh = false)
                 }
+            }
+        }
+
+        // Lightweight background OTA check (delayed so startup stays instant on 512MB RAM)
+        lifecycleScope.launch {
+            delay(5000)
+            val update = otaManager.checkForUpdate()
+            if (update != null && update.versionName != prefs.lastDismissedUpdateVersion) {
+                showUpdateAvailableDialog(update)
             }
         }
     }
@@ -185,7 +200,7 @@ class MainActivity : AppCompatActivity(), PlayerEventListener {
             openSettings()
         }
 
-        // Fix Bug 1: Cursor stuck in search box
+        // Cursor & remote navigation in search box
         etSearch.setOnKeyListener { _, keyCode, event ->
             if (event.action == KeyEvent.ACTION_DOWN) {
                 when (keyCode) {
@@ -450,13 +465,22 @@ class MainActivity : AppCompatActivity(), PlayerEventListener {
                 lifecycleScope.launch {
                     repository.loadChannels(prefs.selectedCountryCode, forceRefresh = true)
                 }
+            },
+            onCheckUpdateRequested = {
+                checkOtaUpdates(manual = true)
             }
         )
         dialog.show()
     }
 
+    // ==================== Video Playback (Screen Kept On) ====================
+
     private fun startPlayback(channel: Channel, index: Int) {
         isPlayingVideo = true
+        // Keep TV display on while channel is playing (never sleep/screensaver)
+        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        surfaceView.keepScreenOn = true
+
         containerBrowse.visibility = View.GONE
         containerPlayer.visibility = View.VISIBLE
         playerErrorOverlay.visibility = View.GONE
@@ -470,6 +494,10 @@ class MainActivity : AppCompatActivity(), PlayerEventListener {
 
     private fun stopPlayback() {
         isPlayingVideo = false
+        // Restore standard screen sleep timer when playback stops
+        window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        surfaceView.keepScreenOn = false
+
         osdHandler.removeCallbacksAndMessages(null)
         playerManager.release()
         containerPlayer.visibility = View.GONE
@@ -541,7 +569,7 @@ class MainActivity : AppCompatActivity(), PlayerEventListener {
         osdHandler.postDelayed(autoSkipRunnable, 3500)
     }
 
-    // ==================== TV Remote Key Handling (Bug 3 & Improvement 1) ====================
+    // ==================== TV Remote Key Handling ====================
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
         if (isPlayingVideo) {
@@ -563,7 +591,7 @@ class MainActivity : AppCompatActivity(), PlayerEventListener {
                     jumpToPreviousChannel()
                     return true
                 }
-                // Up / Down removed from channel change; shows OSD info banner instead
+                // Up / Down shows OSD info banner
                 KeyEvent.KEYCODE_DPAD_UP, KeyEvent.KEYCODE_DPAD_DOWN -> {
                     showOsdBanner()
                     return true
@@ -594,7 +622,7 @@ class MainActivity : AppCompatActivity(), PlayerEventListener {
                     return true
                 }
 
-                // Show exit warning confirmation dialog!
+                // Show exit warning confirmation dialog
                 showExitConfirmationDialog()
                 return true
             }
@@ -616,6 +644,70 @@ class MainActivity : AppCompatActivity(), PlayerEventListener {
             .show()
     }
 
+    // ==================== OTA Update Handling ====================
+
+    private fun checkOtaUpdates(manual: Boolean) {
+        if (manual) {
+            Toast.makeText(this, "Checking for updates...", Toast.LENGTH_SHORT).show()
+        }
+        lifecycleScope.launch {
+            val update = otaManager.checkForUpdate()
+            if (update != null) {
+                showUpdateAvailableDialog(update)
+            } else if (manual) {
+                AlertDialog.Builder(this@MainActivity, androidx.appcompat.R.style.Theme_AppCompat_Dialog_Alert)
+                    .setTitle("Kapyo Tv is Up to Date")
+                    .setMessage("You are running the latest version (${otaManager.getCurrentVersion()}).")
+                    .setPositiveButton("OK", null)
+                    .show()
+            }
+        }
+    }
+
+    private fun showUpdateAvailableDialog(update: UpdateInfo) {
+        val sizeMb = if (update.sizeBytes > 0) String.format("%.1f MB", update.sizeBytes / (1024.0 * 1024.0)) else ""
+        val sizeText = if (sizeMb.isNotEmpty()) " (Size: $sizeMb)" else ""
+
+        AlertDialog.Builder(this, androidx.appcompat.R.style.Theme_AppCompat_Dialog_Alert)
+            .setTitle("Update Available: v${update.versionName}$sizeText")
+            .setMessage("A new version of Kapyo Tv is ready to install.\n\nChanges:\n${update.changelog}\n\nWould you like to download and update now?")
+            .setPositiveButton("Update Now") { _, _ ->
+                startOtaDownload(update)
+            }
+            .setNegativeButton("Later") { dialog, _ ->
+                prefs.lastDismissedUpdateVersion = update.versionName
+                dialog.dismiss()
+            }
+            .show()
+    }
+
+    private fun startOtaDownload(update: UpdateInfo) {
+        val progressDialog = AlertDialog.Builder(this, androidx.appcompat.R.style.Theme_AppCompat_Dialog_Alert)
+            .setTitle("Downloading Update")
+            .setMessage("Downloading Kapyo Tv v${update.versionName}...\n0%")
+            .setCancelable(false)
+            .create()
+        progressDialog.show()
+
+        lifecycleScope.launch {
+            val apk = otaManager.downloadApk(update) { percent ->
+                progressDialog.setMessage("Downloading Kapyo Tv v${update.versionName}...\n$percent%")
+            }
+            progressDialog.dismiss()
+
+            if (apk != null && apk.exists()) {
+                try {
+                    otaManager.installApk(apk)
+                } catch (e: Exception) {
+                    Log.e(TAG, "Install launch failed", e)
+                    Toast.makeText(this@MainActivity, "Failed to launch package installer", Toast.LENGTH_LONG).show()
+                }
+            } else {
+                Toast.makeText(this@MainActivity, "Update download failed. Check network.", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
     // ==================== Lifecycle ====================
 
     override fun onResume() {
@@ -628,6 +720,8 @@ class MainActivity : AppCompatActivity(), PlayerEventListener {
         if (isPlayingVideo) {
             stopPlayback()
         }
+        window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        surfaceView.keepScreenOn = false
         MemoryMonitor.logHeapStats("MainActivity onPause")
     }
 
@@ -636,10 +730,14 @@ class MainActivity : AppCompatActivity(), PlayerEventListener {
         if (isPlayingVideo) {
             stopPlayback()
         }
+        window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        surfaceView.keepScreenOn = false
     }
 
     override fun onDestroy() {
         super.onDestroy()
+        window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        surfaceView.keepScreenOn = false
         osdHandler.removeCallbacksAndMessages(null)
         playerManager.release()
         MemoryMonitor.logHeapStats("MainActivity onDestroy")
