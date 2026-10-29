@@ -2,6 +2,7 @@ package com.famelack.tv.data.repository
 
 import android.content.Context
 import android.util.Log
+import com.famelack.tv.KapyoApp
 import com.famelack.tv.data.model.Category
 import com.famelack.tv.data.model.Channel
 import com.famelack.tv.data.model.Country
@@ -72,6 +73,7 @@ class ChannelRepository(
                 Log.i(TAG, "LRU Evicted disk cache for country: $evictedCountry")
             }
         }
+        enforceDiskCacheLimits()
 
         val cacheFile = getCacheFile(cleanCountry)
         val hasCache = cacheFile.exists() && cacheFile.length() > 0
@@ -136,6 +138,8 @@ class ChannelRepository(
                     return@withContext
                 }
 
+                // Scope string pool strictly to the current country to prevent memory bloat
+                stringPool.clear()
                 val parsedChannels = m3uParser.parse(body.charStream())
                 if (parsedChannels.isEmpty()) {
                     if (!hadExistingCache) {
@@ -212,6 +216,50 @@ class ChannelRepository(
             file.delete()
         }
         prefs.clearCacheMetadata(countryCode)
+    }
+
+    /**
+     * Completely wipes ALL cached files: all country channels, image disk & memory cache, and string pool.
+     */
+    fun clearAllCaches() {
+        try {
+            val files = context.cacheDir.listFiles { _, name ->
+                name.startsWith("channels_") && (name.endsWith(".cache") || name.endsWith(".cache.tmp"))
+            } ?: emptyArray()
+
+            for (file in files) {
+                file.delete()
+            }
+
+            prefs.clearAllCacheMetadata()
+            stringPool.clear()
+
+            (context.applicationContext as? KapyoApp)?.clearAllImageCaches()
+            Log.i(TAG, "Cleared all channel cache files and image caches successfully.")
+        } catch (e: Exception) {
+            Log.e(TAG, "Error clearing all caches", e)
+        }
+    }
+
+    /**
+     * Enforces strict disk quota: deletes old/orphan country caches beyond the active LRU.
+     */
+    fun enforceDiskCacheLimits() {
+        try {
+            val lruSet = prefs.getLruCountries().map { "channels_${it.lowercase()}.cache" }.toSet()
+            val files = context.cacheDir.listFiles { _, name ->
+                name.startsWith("channels_") && name.endsWith(".cache")
+            } ?: emptyArray()
+
+            for (file in files) {
+                if (file.name !in lruSet) {
+                    file.delete()
+                    Log.i(TAG, "Evicted orphan/old cache file: ${file.name}")
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error enforcing disk cache limits", e)
+        }
     }
 
     /**

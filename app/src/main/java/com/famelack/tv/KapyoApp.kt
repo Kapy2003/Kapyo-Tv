@@ -5,6 +5,7 @@ import android.graphics.Bitmap
 import android.util.Log
 import coil.ImageLoader
 import coil.ImageLoaderFactory
+import coil.annotation.ExperimentalCoilApi
 import coil.disk.DiskCache
 import coil.memory.MemoryCache
 import coil.request.CachePolicy
@@ -14,9 +15,9 @@ import com.famelack.tv.util.MemoryMonitor
 
 /**
  * Kapyo Tv Application class tuned for extreme 512 MB RAM constraints.
- * - Coil configured with strict 8 MB memory cache and RGB_565 bitmaps (50% memory saving).
+ * - Coil configured with tight 4 MB memory cache and 4 MB disk cache (zero cache bloating).
  * - Central manual DI for lightweight singletons (no Hilt/Dagger overhead).
- * - Continuous memory budget logging in debug mode.
+ * - Automatic cache flushing onLowMemory / onTrimMemory.
  */
 class KapyoApp : Application(), ImageLoaderFactory {
 
@@ -25,6 +26,8 @@ class KapyoApp : Application(), ImageLoaderFactory {
 
     lateinit var channelRepository: ChannelRepository
         private set
+
+    private var activeImageLoader: ImageLoader? = null
 
     override fun onCreate() {
         super.onCreate()
@@ -39,39 +42,54 @@ class KapyoApp : Application(), ImageLoaderFactory {
     }
 
     override fun newImageLoader(): ImageLoader {
-        // Strict 8 MB memory cache, RGB_565 bitmaps to prevent OOM on 512 MB devices
-        return ImageLoader.Builder(this)
+        val loader = ImageLoader.Builder(this)
             .memoryCache {
                 MemoryCache.Builder(this)
-                    .maxSizeBytes(8 * 1024 * 1024) // Exactly 8 MB ceiling
+                    .maxSizeBytes(4 * 1024 * 1024) // 4 MB ceiling (prevent RAM bloat)
                     .build()
             }
             .diskCache {
                 DiskCache.Builder()
                     .directory(cacheDir.resolve("image_cache"))
-                    .maxSizeBytes(16 * 1024 * 1024) // 16 MB disk cache
+                    .maxSizeBytes(4 * 1024 * 1024) // 4 MB disk ceiling (prevent eMMC storage bloat)
                     .build()
             }
-            .bitmapConfig(Bitmap.Config.RGB_565) // 2 bytes per pixel instead of 4
+            .bitmapConfig(Bitmap.Config.RGB_565) // 2 bytes per pixel
             .allowRgb565(true)
             .memoryCachePolicy(CachePolicy.ENABLED)
             .diskCachePolicy(CachePolicy.ENABLED)
             .networkCachePolicy(CachePolicy.ENABLED)
-            .crossfade(false) // Disable crossfade to eliminate animation allocations
+            .crossfade(false)
             .build()
+        activeImageLoader = loader
+        return loader
+    }
+
+    @OptIn(ExperimentalCoilApi::class)
+    fun clearAllImageCaches() {
+        activeImageLoader?.let { loader ->
+            loader.memoryCache?.clear()
+            loader.diskCache?.clear()
+        }
+        val imgDir = cacheDir.resolve("image_cache")
+        if (imgDir.exists()) {
+            imgDir.deleteRecursively()
+        }
     }
 
     override fun onLowMemory() {
         super.onLowMemory()
-        Log.w(TAG, "onLowMemory triggered! Flushing memory caches...")
+        activeImageLoader?.memoryCache?.clear()
+        Log.w(TAG, "onLowMemory triggered! Flushed image memory cache.")
         MemoryMonitor.logHeapStats("onLowMemory")
     }
 
     override fun onTrimMemory(level: Int) {
         super.onTrimMemory(level)
         Log.i(TAG, "onTrimMemory level: $level")
-        if (level >= TRIM_MEMORY_BACKGROUND) {
-            MemoryMonitor.logHeapStats("onTrimMemory background")
+        if (level >= TRIM_MEMORY_BACKGROUND || level >= TRIM_MEMORY_RUNNING_LOW) {
+            activeImageLoader?.memoryCache?.clear()
+            MemoryMonitor.logHeapStats("onTrimMemory cleared")
         }
     }
 
@@ -81,4 +99,3 @@ class KapyoApp : Application(), ImageLoaderFactory {
             private set
     }
 }
-

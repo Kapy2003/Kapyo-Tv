@@ -147,6 +147,21 @@ class PreferencesManager(private val context: Context) {
         prefs.edit().putString(KEY_LRU_COUNTRIES, list.joinToString(",")).apply()
     }
 
+    fun clearAllCacheMetadata() {
+        val editor = prefs.edit()
+        val allKeys = prefs.all.keys
+        for (key in allKeys) {
+            if (key.startsWith(KEY_ETAG_PREFIX) ||
+                key.startsWith(KEY_LAST_MOD_PREFIX) ||
+                key.startsWith(KEY_FETCH_TIME_PREFIX)
+            ) {
+                editor.remove(key)
+            }
+        }
+        editor.remove(KEY_LRU_COUNTRIES)
+        editor.apply()
+    }
+
     companion object {
         private const val PREFS_NAME = "kapyo_tv_prefs"
         private const val KEY_COUNTRY_CODE = "selected_country_code"

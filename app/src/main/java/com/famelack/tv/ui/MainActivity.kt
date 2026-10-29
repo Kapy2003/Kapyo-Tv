@@ -1,9 +1,12 @@
 package com.famelack.tv.ui
 
+import android.content.ActivityNotFoundException
 import android.content.Context
+import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.speech.RecognizerIntent
 import android.util.Log
 import android.text.Editable
 import android.text.TextWatcher
@@ -13,9 +16,11 @@ import android.view.View
 import android.view.inputmethod.InputMethodManager
 import android.widget.Button
 import android.widget.EditText
+import android.widget.ImageButton
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.Lifecycle
@@ -52,6 +57,7 @@ class MainActivity : AppCompatActivity(), PlayerEventListener {
 
     // Top Bar Views
     private lateinit var tvTopCountryBadge: TextView
+    private lateinit var btnVoiceSearch: ImageButton
     private lateinit var etSearch: EditText
     private lateinit var btnSettings: Button
 
@@ -93,6 +99,18 @@ class MainActivity : AppCompatActivity(), PlayerEventListener {
     private val hideOsdRunnable = Runnable { playerOsdBanner.visibility = View.GONE }
     private val autoSkipRunnable = Runnable { jumpToNextChannel() }
 
+    private val voiceSearchLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == RESULT_OK) {
+            val spokenText = result.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.firstOrNull()
+            if (!spokenText.isNullOrBlank()) {
+                etSearch.setText(spokenText)
+                etSearch.setSelection(spokenText.length)
+                currentSearchQuery = spokenText.trim()
+                applyFilter()
+            }
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         // Instant 512MB RAM splash transition: switch from splash windowBackground to main TV theme
         setTheme(R.style.Theme_Kapyo)
@@ -133,6 +151,7 @@ class MainActivity : AppCompatActivity(), PlayerEventListener {
         containerPlayer = findViewById(R.id.container_player)
 
         tvTopCountryBadge = findViewById(R.id.tv_top_country_badge)
+        btnVoiceSearch = findViewById(R.id.btn_voice_search)
         etSearch = findViewById(R.id.et_search)
         btnSettings = findViewById(R.id.btn_settings)
 
@@ -158,6 +177,10 @@ class MainActivity : AppCompatActivity(), PlayerEventListener {
             showHomeCountryPicker()
         }
 
+        btnVoiceSearch.setOnClickListener {
+            startVoiceSearch()
+        }
+
         btnSettings.setOnClickListener {
             openSettings()
         }
@@ -176,7 +199,7 @@ class MainActivity : AppCompatActivity(), PlayerEventListener {
                         if (etSearch.selectionStart == 0) {
                             hideKeyboard()
                             etSearch.clearFocus()
-                            tvTopCountryBadge.requestFocus()
+                            btnVoiceSearch.requestFocus()
                             return@setOnKeyListener true
                         }
                     }
@@ -208,6 +231,18 @@ class MainActivity : AppCompatActivity(), PlayerEventListener {
             }
             override fun afterTextChanged(s: Editable?) {}
         })
+    }
+
+    private fun startVoiceSearch() {
+        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+            putExtra(RecognizerIntent.EXTRA_PROMPT, getString(R.string.search_hint))
+        }
+        try {
+            voiceSearchLauncher.launch(intent)
+        } catch (e: ActivityNotFoundException) {
+            Toast.makeText(this, "Voice search is not supported on this device", Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun hideKeyboard() {
@@ -411,7 +446,7 @@ class MainActivity : AppCompatActivity(), PlayerEventListener {
                 }
             },
             onCacheCleared = {
-                repository.clearCache(prefs.selectedCountryCode)
+                repository.clearAllCaches()
                 lifecycleScope.launch {
                     repository.loadChannels(prefs.selectedCountryCode, forceRefresh = true)
                 }
